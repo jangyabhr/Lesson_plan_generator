@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OAV Lesson Plan Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root{
+    --blue:#00549A;--blue-dark:#003d73;--blue-light:#e8f1fb;
+    --gold:#FFC107;--gold-dark:#e6a800;--off-white:#f7f9fc;
+    --gray:#6b7280;--gray-light:#e5e9f0;--text:#1a2332;--radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--off-white);color:var(--text);min-height:100vh;}
+
+  header{background:var(--blue);color:white;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.18);}
+  .header-inner{max-width:900px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px;}
+  .header-logo{width:44px;height:44px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-weight:700;font-size:18px;color:var(--blue-dark);flex-shrink:0;}
+  .header-text h1{font-family:'Crimson Pro',serif;font-size:20px;font-weight:700;}
+  .header-text p{font-size:12px;opacity:.75;margin-top:1px;font-weight:300;}
+  .header-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:500;letter-spacing:.04em;white-space:nowrap;}
+
+  .container{max-width:900px;margin:32px auto;padding:0 24px 60px;}
+
+  /* API KEY BANNER */
+  .apikey-card{background:white;border-radius:var(--radius);border:1px solid var(--gray-light);padding:18px 24px;box-shadow:0 2px 16px rgba(0,60,120,.07);margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .apikey-card label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--blue-dark);white-space:nowrap;}
+  .apikey-wrap{flex:1;min-width:220px;display:flex;gap:8px;align-items:center;}
+  .apikey-wrap input{flex:1;font-family:'DM Sans',sans-serif;font-size:13px;border:1.5px solid var(--gray-light);border-radius:7px;padding:9px 12px;color:var(--text);background:var(--off-white);outline:none;transition:border-color .2s,box-shadow .2s;}
+  .apikey-wrap input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,84,154,.1);background:white;}
+  .apikey-status{font-size:12px;white-space:nowrap;}
+  .apikey-status.ok{color:#166534;}
+  .apikey-status.bad{color:#b91c1c;}
+  .btn-savekey{padding:8px 16px;background:var(--blue);color:white;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .btn-savekey:hover{background:var(--blue-dark);}
+  .apikey-hint{font-size:11px;color:var(--gray);width:100%;margin-top:2px;}
+
+  .form-card{background:white;border-radius:var(--radius);border:1px solid var(--gray-light);padding:32px;box-shadow:0 2px 16px rgba(0,60,120,.07);margin-bottom:28px;}
+  .form-card h2{font-family:'Crimson Pro',serif;font-size:22px;color:var(--blue);margin-bottom:22px;padding-bottom:12px;border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:8px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--blue-dark);}
+  label span{color:var(--gold-dark);}
+  input,select,textarea{font-family:'DM Sans',sans-serif;font-size:14px;border:1.5px solid var(--gray-light);border-radius:7px;padding:10px 13px;color:var(--text);background:var(--off-white);transition:border-color .2s,box-shadow .2s;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,84,154,.1);background:white;}
+  textarea{resize:vertical;min-height:72px;}
+
+  .btn-generate{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;background:var(--blue);color:white;border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s;margin-top:8px;letter-spacing:.02em;}
+  .btn-generate:hover{background:var(--blue-dark);}
+  .btn-generate:active{transform:scale(.99);}
+  .btn-generate:disabled{background:#93afc8;cursor:not-allowed;transform:none;}
+
+  #status-area{display:none;background:var(--blue-light);border:1px solid #bed3ec;border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;}
+  .status-row{display:flex;align-items:center;gap:12px;}
+  .spinner{width:22px;height:22px;border:3px solid #bed3ec;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .status-text{font-size:14px;color:var(--blue-dark);font-weight:500;}
+  .chunk-log{margin-top:10px;font-size:12px;color:var(--blue-dark);opacity:.8;min-height:18px;}
+  .progress-bar-wrap{margin-top:12px;background:#bed3ec;border-radius:10px;height:6px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:var(--blue);border-radius:10px;width:0%;transition:width .4s ease;}
+
+  #error-area{display:none;background:#fff2f2;border:1px solid #fca5a5;border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;color:#b91c1c;font-size:14px;}
+  #output-area{display:none;}
+  .output-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .output-title{font-family:'Crimson Pro',serif;font-size:20px;color:var(--blue);font-weight:700;}
+  .toolbar-btns{display:flex;gap:8px;}
+  .btn-action{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;}
+  .btn-pdf{background:var(--blue);color:white;}
+  .btn-pdf:hover{background:var(--blue-dark);}
+  .btn-new{background:white;color:var(--blue);border:1.5px solid var(--blue);}
+  .btn-new:hover{background:var(--blue-light);}
+
+  #plan-output{background:white;border-radius:var(--radius);border:1px solid var(--gray-light);box-shadow:0 2px 16px rgba(0,60,120,.07);overflow:hidden;}
+  .plan-cover{background:var(--blue);color:white;padding:36px 40px;text-align:center;}
+  .plan-cover-stripe{height:4px;background:var(--gold);margin:14px 0;border-radius:2px;}
+  .plan-cover h1{font-family:'Crimson Pro',serif;font-size:34px;font-weight:700;}
+  .plan-cover table{margin:16px auto 0;border-collapse:collapse;text-align:left;}
+  .plan-cover td{padding:4px 14px 4px 0;font-size:14px;opacity:.9;}
+  .plan-cover td:first-child{font-weight:600;opacity:1;color:var(--gold);white-space:nowrap;}
+  .plan-body{padding:32px 40px;}
+  .period-block{margin-bottom:36px;border:1px solid var(--gray-light);border-radius:8px;overflow:hidden;}
+  .period-header{background:var(--blue);color:white;padding:11px 18px;font-family:'Crimson Pro',serif;font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px;}
+  .period-num-badge{background:var(--gold);color:var(--blue-dark);border-radius:5px;padding:2px 9px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+  .period-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .period-table tr:nth-child(even) td{background:#f7f9fc;}
+  .period-table td{padding:11px 16px;border-bottom:1px solid var(--gray-light);vertical-align:top;line-height:1.65;}
+  .period-table td:first-child{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);width:150px;white-space:nowrap;background:var(--blue-light)!important;border-right:2px solid #bed3ec;}
+  .period-table tr:last-child td{border-bottom:none;}
+  .plan-footer{background:var(--blue);color:white;text-align:center;padding:14px;font-size:12px;opacity:.9;letter-spacing:.03em;}
+  .q-block{margin-bottom:10px;}.q-label{font-weight:600;color:var(--blue-dark);}.q-ans{font-style:italic;color:#166534;}
+  .concept-item{margin-bottom:5px;}.concept-term{font-weight:600;}
+  .outcome-item{margin-bottom:4px;}.outcome-item::before{content:"• ";color:var(--blue);font-weight:700;}
+  .step-item{margin-bottom:4px;padding-left:12px;}.step-item::before{content:"→ ";color:var(--gold-dark);}
+  .materials{font-style:italic;color:var(--gray);margin-top:6px;font-size:13px;}
+  .teacher-role{color:var(--blue-dark);margin-top:4px;font-size:13px;}
+
+  @media(max-width:600px){
+    .form-grid{grid-template-columns:1fr;}
+    .plan-body{padding:20px;}
+    .plan-cover{padding:24px 20px;}
+    .period-table td:first-child{width:100px;font-size:11px;}
+    .apikey-card{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-logo">OAV</div>
+    <div class="header-text">
+      <h1>Mathematics Lesson Plan Generator</h1>
+      <p>OAV School, Odisha &nbsp;·&nbsp; NEP 2020 &nbsp;·&nbsp; CBSE / NCERT &nbsp;·&nbsp; Classes 6–12</p>
+    </div>
+    <div class="header-badge">AI-Powered ✦</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- API KEY -->
+  <div class="apikey-card">
+    <label>🔑 API Key</label>
+    <div class="apikey-wrap">
+      <input type="password" id="inp-apikey" placeholder="sk-ant-api03-…" oninput="onKeyInput()">
+      <button class="btn-savekey" onclick="saveKey()">Save for session</button>
+      <span class="apikey-status" id="key-status"></span>
+    </div>
+    <div class="apikey-hint">Your key is stored only in this browser tab (sessionStorage) and never sent anywhere except directly to api.anthropic.com. Get your key at <strong>console.anthropic.com → API Keys</strong>.</div>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-card" id="form-card">
+    <h2>📋 Plan Details</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Class <span>*</span></label>
+        <select id="inp-class">
+          <option value="">— Select Class —</option>
+          <option value="6">Class 6</option><option value="7">Class 7</option>
+          <option value="8">Class 8</option><option value="9">Class 9</option>
+          <option value="10">Class 10</option><option value="11">Class 11</option>
+          <option value="12">Class 12</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Number of Periods <span>*</span></label>
+        <input type="number" id="inp-periods" value="12" min="1" max="30">
+      </div>
+      <div class="form-group">
+        <label>Periods per Batch <span style="color:var(--gray);font-weight:400;text-transform:none;letter-spacing:0">(chunk size)</span></label>
+        <select id="inp-chunk">
+          <option value="2">2 — Safest (slowest)</option>
+          <option value="3" selected>3 — Recommended</option>
+          <option value="4">4 — Faster</option>
+          <option value="5">5 — Fastest (may truncate)</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Chapter / Topic <span>*</span></label>
+        <input type="text" id="inp-chapter" placeholder="e.g. Circles, Quadratic Equations, Fractions…">
+      </div>
+      <div class="form-group full">
+        <label>Special Instructions <span style="color:var(--gray);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <textarea id="inp-special" placeholder="e.g. Focus on board exam questions, include lab activity in P3, emphasise Odia cultural examples…"></textarea>
+      </div>
+    </div>
+    <button class="btn-generate" id="btn-generate" onclick="generatePlan()">
+      <span>⚡</span> Generate Lesson Plan
+    </button>
+  </div>
+
+  <!-- STATUS -->
+  <div id="status-area">
+    <div class="status-row">
+      <div class="spinner"></div>
+      <div class="status-text" id="status-text">Initialising…</div>
+    </div>
+    <div class="chunk-log" id="chunk-log"></div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar"></div></div>
+  </div>
+
+  <div id="error-area"></div>
+
+  <!-- OUTPUT -->
+  <div id="output-area">
+    <div class="output-toolbar">
+      <div class="output-title" id="output-title">Lesson Plan Ready</div>
+      <div class="toolbar-btns">
+        <button class="btn-action btn-new" onclick="resetForm()">✦ New Plan</button>
+        <button class="btn-action btn-pdf" onclick="printPDF()">🖨 Print / Save PDF</button>
+      </div>
+    </div>
+    <div id="plan-output"></div>
+  </div>
+
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are an expert CBSE Mathematics teacher at OAV School (Odisha Adarsha Vidyalaya), Odisha. You create detailed, NEP 2020-aligned lesson plans for Classes 6–12.
+
+SYLLABUS RULES:
+- Class 6: NEW NCERT 2024-25 book "Ganita Prakash". Chapters: Pattern in Mathematics, Lines and Angles, Number Play, Data Handling and Presentation, Prime Time, Perimeter and Area, Fractions, Play with Construction.
+- Class 7: NEW NCERT 2025-26 book. New chapters only.
+- Class 8: NEW NCERT 2025-26, 7 chapters, activity/play-based.
+- Class 9–12: Standard NCERT, unchanged.
+- If chapter seems to be from OLD syllabus for Class 6/7/8, flag it as warning in meta.
+
+PEDAGOGY:
+- NEP 2020 / NCF-SE 2023 principles
+- Bloom's Taxonomy (early periods = Remember/Apply, later = Analyse/Evaluate/Create)
+- CBSE board question formats: MCQ, Assertion-Reason, Case-Based, Short Answer, HOT
+- Indian context: local names (Aarav, Priya, Sunita, Ramesh), rupees, Odia cultural references
+- Activities must be doable in a standard classroom
+- No two consecutive periods should repeat the same activity type
+
+OUTPUT FORMAT — CRITICAL:
+Return ONLY a valid JSON object. No markdown, no backticks, no explanation before or after.
+{
+  "meta": { "class": "IX", "chapter": "Name", "totalPeriods": 12, "syllabus": "CBSE / NCERT", "session": "2025-26", "warning": "" },
+  "periods": [
+    {
+      "number": 1, "title": "Title", "topic": "Sub-topic",
+      "concepts": [{"term": "T", "definition": "D"}],
+      "activity": { "name": "Name", "steps": ["s1","s2","s3"], "materials": "...", "teacherRole": "..." },
+      "questions": [
+        {"type":"MCQ","question":"...","options":["(a)...","(b)...","(c)...","(d)..."],"answer":"(b)"},
+        {"type":"Assertion-Reason","question":"A: ... R: ...","options":["(a) Both true, R explains A","(b) Both true, R does not explain A","(c) A true R false","(d) A false R true"],"answer":"(a)"},
+        {"type":"Case-Based","question":"Context. (i) Q1. (ii) Q2.","answer":"..."},
+        {"type":"Short Answer","question":"...","answer":"..."},
+        {"type":"HOT","question":"...","answer":"..."}
+      ],
+      "outcomes": ["o1","o2","o3"],
+      "homework": "..."
+    }
+  ]
+}
+Every field must be fully written. Never write null or skip a field.`;
+
+function $(id){ return document.getElementById(id); }
+function setStatus(t,p){ $('status-text').textContent=t; if(p!==undefined) $('progress-bar').style.width=p+'%'; }
+function setChunkLog(t){ $('chunk-log').textContent=t; }
+function showError(msg){ const el=$('error-area'); el.textContent='⚠ '+msg; el.style.display='block'; $('status-area').style.display='none'; $('btn-generate').disabled=false; }
+function resetForm(){ $('output-area').style.display='none'; $('form-card').style.display='block'; $('error-area').style.display='none'; $('btn-generate').disabled=false; }
+
+// ── API KEY ───────────────────────────────────────────────────────────────────
+function onKeyInput(){
+  $('key-status').textContent='';
+  $('key-status').className='apikey-status';
+}
+function saveKey(){
+  const k = $('inp-apikey').value.trim();
+  if(!k.startsWith('sk-ant-')){ $('key-status').textContent='⚠ Invalid key format'; $('key-status').className='apikey-status bad'; return; }
+  sessionStorage.setItem('oav_apikey', k);
+  $('key-status').textContent='✓ Saved for this session'; $('key-status').className='apikey-status ok';
+}
+function getKey(){
+  return sessionStorage.getItem('oav_apikey') || $('inp-apikey').value.trim();
+}
+// Restore from session on load
+window.addEventListener('DOMContentLoaded', ()=>{
+  const saved = sessionStorage.getItem('oav_apikey');
+  if(saved){ $('inp-apikey').value=saved; $('key-status').textContent='✓ Restored from session'; $('key-status').className='apikey-status ok'; }
+});
+
+// ── PRINT PDF ─────────────────────────────────────────────────────────────────
+function printPDF(){
+  const planHTML = $('plan-output').innerHTML;
+  const win = window.open('','_blank');
+  if(!win){ alert('Please allow pop-ups for this page, then try again.'); return; }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>OAV Lesson Plan</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+    :root{--blue:#00549A;--blue-dark:#003d73;--blue-light:#e8f1fb;--gold:#FFC107;--gold-dark:#e6a800;--gray:#6b7280;--gray-light:#e5e9f0;--text:#1a2332;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;color:var(--text);background:white;}
+    .plan-cover{background:var(--blue);color:white;padding:36px 40px;text-align:center;}
+    .plan-cover-stripe{height:4px;background:var(--gold);margin:14px 0;border-radius:2px;}
+    .plan-cover h1{font-family:'Crimson Pro',serif;font-size:34px;font-weight:700;}
+    .plan-cover table{margin:16px auto 0;border-collapse:collapse;text-align:left;}
+    .plan-cover td{padding:4px 14px 4px 0;font-size:14px;opacity:.9;}
+    .plan-cover td:first-child{font-weight:600;opacity:1;color:var(--gold);white-space:nowrap;}
+    .plan-body{padding:32px 40px;}
+    .period-block{margin-bottom:32px;border:1px solid var(--gray-light);border-radius:8px;overflow:hidden;page-break-inside:avoid;}
+    .period-header{background:var(--blue);color:white;padding:11px 18px;font-family:'Crimson Pro',serif;font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px;}
+    .period-num-badge{background:var(--gold);color:var(--blue-dark);border-radius:5px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap;}
+    .period-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .period-table tr:nth-child(even) td{background:#f7f9fc;}
+    .period-table td{padding:9px 14px;border-bottom:1px solid var(--gray-light);vertical-align:top;line-height:1.6;}
+    .period-table td:first-child{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);width:140px;white-space:nowrap;background:var(--blue-light)!important;border-right:2px solid #bed3ec;}
+    .period-table tr:last-child td{border-bottom:none;}
+    .plan-footer{background:var(--blue);color:white;text-align:center;padding:14px;font-size:12px;letter-spacing:.03em;}
+    .q-block{margin-bottom:8px;}.q-label{font-weight:600;color:var(--blue-dark);}.q-ans{font-style:italic;color:#166534;}
+    .concept-item{margin-bottom:4px;}.concept-term{font-weight:600;}
+    .outcome-item{margin-bottom:3px;}.outcome-item::before{content:"• ";color:var(--blue);font-weight:700;}
+    .step-item{margin-bottom:3px;padding-left:10px;}.step-item::before{content:"→ ";color:var(--gold-dark);}
+    .materials{font-style:italic;color:var(--gray);margin-top:5px;font-size:12px;}
+    .teacher-role{color:var(--blue-dark);margin-top:3px;font-size:12px;}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  </style></head><body>${planHTML}
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ── JSON HELPERS ──────────────────────────────────────────────────────────────
+function parseJSON(raw){
+  const c = raw.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'').trim();
+  try{ return JSON.parse(c); }
+  catch(e){
+    const m = c.match(/\{[\s\S]*\}/);
+    if(m) return JSON.parse(m[0]);
+    throw new Error('JSON parse failed — try a smaller chunk size.');
+  }
+}
+
+// ── API CALL ──────────────────────────────────────────────────────────────────
+async function callAPI(userPrompt){
+  const key = getKey();
+  if(!key || !key.startsWith('sk-ant-')) throw new Error('Please enter and save a valid Anthropic API key first.');
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key': key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:8000, system:SYSTEM_PROMPT, messages:[{role:'user',content:userPrompt}] })
+  });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+}
+
+// ── CHUNK FETCH ───────────────────────────────────────────────────────────────
+async function fetchChunk(cls, classRoman, chapter, totalPeriods, special, from, to, warning){
+  const rules=[];
+  if(from===1) rules.push('Period 1: concept introduction + prior knowledge activation.');
+  if(to===totalPeriods) rules.push(`Period ${totalPeriods}: revision + self-assessment + board-exam practice.`);
+  const prompt=`Generate ONLY periods ${from} to ${to} (of ${totalPeriods} total) for:
+- Class: ${classRoman} (Class ${cls})
+- Chapter: ${chapter}
+- Total Periods: ${totalPeriods}
+- Special Instructions: ${special||'None'}
+${rules.length?'- Rules: '+rules.join(' '):''}
+
+Return ONLY this JSON shape:
+{"meta":{"class":"${classRoman}","chapter":"${chapter}","totalPeriods":${totalPeriods},"syllabus":"CBSE / NCERT","session":"2025-26","warning":"${warning||''}"},"periods":[/* periods ${from}–${to} only */]}
+
+Every period: topic, 3-5 concepts, activity (3+ steps), 5 questions (MCQ+A-R+Case-Based+SA+HOT), 3 outcomes, homework. No null fields.`;
+  const raw = await callAPI(prompt);
+  return parseJSON(raw);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderPlan(meta, periods){
+  let html=`<div class="plan-cover">
+    <div class="plan-cover-stripe"></div><h1>Lesson Plan</h1><div class="plan-cover-stripe"></div>
+    <table>
+      <tr><td>School</td><td>OAV School, Odisha</td></tr>
+      <tr><td>Class</td><td>${meta.class} &nbsp;·&nbsp; Mathematics</td></tr>
+      <tr><td>Chapter</td><td>${meta.chapter}</td></tr>
+      <tr><td>Periods</td><td>${meta.totalPeriods} × 45 minutes</td></tr>
+      <tr><td>Syllabus</td><td>${meta.syllabus}</td></tr>
+      <tr><td>Session</td><td>${meta.session}</td></tr>
+      <tr><td>Teacher</td><td>____________________________</td></tr>
+    </table>
+    <div class="plan-cover-stripe" style="margin-top:18px"></div>
+  </div>`;
+  if(meta.warning) html+=`<div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:14px 20px;font-size:13px;color:#92400e;">⚠ <strong>Syllabus Note:</strong> ${meta.warning}</div>`;
+  html+=`<div class="plan-body">`;
+  periods.forEach(p=>{
+    const cHtml=(p.concepts||[]).map(c=>`<div class="concept-item"><span class="concept-term">${c.term}:</span> ${c.definition}</div>`).join('');
+    const act=p.activity||{};
+    const sHtml=(act.steps||[]).map((s,i)=>`<div class="step-item">Step ${i+1}: ${s}</div>`).join('');
+    const actHtml=`<strong>${act.name||''}</strong><br>${sHtml}<div class="materials">📦 Materials: ${act.materials||''}</div><div class="teacher-role">👩‍🏫 Teacher's role: ${act.teacherRole||''}</div>`;
+    const qHtml=(p.questions||[]).map((q,i)=>{
+      const opts=q.options&&q.options.length?`<div style="margin:4px 0">${q.options.join(' &nbsp; ')}</div>`:'';
+      return `<div class="q-block"><span class="q-label">Q${i+1} (${q.type}):</span> ${q.question}${opts}<div class="q-ans">✓ ${q.answer}</div></div>`;
+    }).join('');
+    const oHtml=(p.outcomes||[]).map(o=>`<div class="outcome-item">${o}</div>`).join('');
+    html+=`<div class="period-block">
+      <div class="period-header"><span class="period-num-badge">Period ${p.number} of ${meta.totalPeriods}</span>${p.title}</div>
+      <table class="period-table">
+        <tr><td>🎯 Topic</td><td>${p.topic}</td></tr>
+        <tr><td>📐 Key Concepts</td><td>${cHtml}</td></tr>
+        <tr><td>🧑‍🎓 Activity</td><td>${actHtml}</td></tr>
+        <tr><td>📝 CBQ Tasks</td><td>${qHtml}</td></tr>
+        <tr><td>✅ Outcomes</td><td>${oHtml}</td></tr>
+        <tr><td>🏠 Homework</td><td>${p.homework}</td></tr>
+      </table>
+    </div>`;
+  });
+  html+=`</div><div class="plan-footer">OAV School · Class ${meta.class} · ${meta.chapter} · ${meta.totalPeriods} Periods · NEP 2020 | CBSE | Session ${meta.session}</div>`;
+  $('plan-output').innerHTML=html;
+  $('output-title').textContent=`Class ${meta.class} — ${meta.chapter}`;
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+async function generatePlan(){
+  const cls     = $('inp-class').value.trim();
+  const chapter = $('inp-chapter').value.trim();
+  const periods = parseInt($('inp-periods').value)||12;
+  const special = $('inp-special').value.trim();
+  const CHUNK   = parseInt($('inp-chunk').value)||3;
+
+  if(!cls)     { alert('Please select a class.'); return; }
+  if(!chapter) { alert('Please enter a chapter / topic name.'); return; }
+  if(!getKey().startsWith('sk-ant-')) { alert('Please enter and save your Anthropic API key first.'); return; }
+
+  $('btn-generate').disabled=true;
+  $('error-area').style.display='none';
+  $('output-area').style.display='none';
+  $('status-area').style.display='block';
+
+  const classLabels={'6':'VI','7':'VII','8':'VIII','9':'IX','10':'X','11':'XI','12':'XII'};
+  const classRoman=classLabels[cls]||cls;
+
+  const chunks=[];
+  for(let i=1;i<=periods;i+=CHUNK) chunks.push({from:i,to:Math.min(i+CHUNK-1,periods)});
+
+  let allPeriods=[], metaObj=null;
+  try{
+    for(let ci=0;ci<chunks.length;ci++){
+      const {from,to}=chunks[ci];
+      const pct=Math.round(10+(ci/chunks.length)*80);
+      setStatus(`Generating periods ${from}–${to} of ${periods}…`,pct);
+      setChunkLog(`Batch ${ci+1} of ${chunks.length} · Periods ${from}–${to}`);
+      const result=await fetchChunk(cls,classRoman,chapter,periods,special,from,to,metaObj?.warning||'');
+      if(!metaObj&&result.meta) metaObj=result.meta;
+      if(result.periods&&result.periods.length) allPeriods=allPeriods.concat(result.periods);
+      else throw new Error(`No periods returned in batch ${ci+1}. Try reducing chunk size.`);
+    }
+    allPeriods.sort((a,b)=>a.number-b.number);
+    setStatus('Rendering…',95);
+    setChunkLog(`All ${periods} periods generated ✓`);
+    renderPlan(metaObj||{class:classRoman,chapter,totalPeriods:periods,syllabus:'CBSE / NCERT',session:'2025-26',warning:''},allPeriods);
+    $('status-area').style.display='none';
+    $('form-card').style.display='none';
+    $('output-area').style.display='block';
+    $('btn-generate').disabled=false;
+  }catch(err){
+    showError(err.message||'Something went wrong. Please try again.');
+  }
+}
+</script>
+</body>
+</html>
